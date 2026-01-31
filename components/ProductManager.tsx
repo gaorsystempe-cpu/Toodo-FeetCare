@@ -110,8 +110,8 @@ const ProductManager: React.FC<ProductManagerProps> = ({ session, config, onUpda
       hiddenProducts: hiddenIds.map(Number), 
       hiddenCategories: hiddenCats 
     };
-    // Fix line 112: saveClient expects 0 arguments
-    const result = await saveClient();
+    // Fix: Pass newConfig to saveClient as it expects 1 argument
+    const result = await saveClient(newConfig);
     if (result.success) {
       onUpdate(newConfig);
       setShowSuccess(true);

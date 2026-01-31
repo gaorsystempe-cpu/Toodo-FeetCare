@@ -49,7 +49,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
         setIsGeneratingPalette(true);
         try {
-            // Directly using process.env.API_KEY to initialize GoogleGenAI as per guidelines
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
                 model: 'gemini-3-flash-preview',
@@ -69,23 +68,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 }
             });
 
-            // Using the .text property directly instead of text() method
             const text = response.text;
             if (!text) throw new Error("La IA no devolvió contenido.");
             
-            try {
-                const data = JSON.parse(text);
-                setCurrentClient(prev => ({
-                    ...prev,
-                    colorPrimario: data.primary || prev.colorPrimario,
-                    colorSecundario: data.secondary || prev.colorSecundario,
-                    colorAcento: data.accent || prev.colorAcento,
-                    footer_description: data.footerDescription || prev.footer_description
-                }));
-            } catch (jsonErr) {
-                console.error("Error parseando respuesta de IA:", text);
-                alert("La IA devolvió un formato inesperado. Intenta de nuevo.");
-            }
+            const data = JSON.parse(text);
+            setCurrentClient(prev => ({
+                ...prev,
+                colorPrimario: data.primary || prev.colorPrimario,
+                colorSecundario: data.secondary || prev.colorSecundario,
+                colorAcento: data.accent || prev.colorAcento,
+                footer_description: data.footerDescription || prev.footer_description
+            }));
         } catch (error: any) {
             console.error("AI Error:", error);
             alert("Error de IA: " + error.message);
@@ -98,15 +91,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            // Fix line 102: saveClient expects 0 arguments
-            const result = await saveClient();
+            const result = await saveClient(currentClient);
             if (result.success) {
                 await loadClients();
                 setIsEditing(false);
                 resetForm();
             } else {
-                // Fix line 108: result doesn't have a message property
-                alert("Error al guardar.");
+                alert("Error al guardar: " + (result as any).message);
             }
         } finally {
             setIsLoading(false);
@@ -117,8 +108,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         if (confirm(`¿Eliminar cliente ${code}?`)) {
             setIsLoading(true);
             try {
-                // Fix line 119: deleteClient expects 0 arguments
-                if (await deleteClient()) await loadClients();
+                if (await deleteClient(code)) await loadClients();
             } finally {
                 setIsLoading(false);
             }
@@ -150,7 +140,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     const handleTestConnection = async (client: ClientConfig) => {
         setTestingClient(client.code);
         try {
-            // Fix line 151: OdooClient constructor expects 2 arguments
             const odoo = new OdooClient(client.url, client.db);
             const uid = await odoo.authenticate(client.username, client.apiKey);
             alert(`Conexión Exitosa. UID: ${uid}`);
@@ -224,11 +213,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                                     </td>
                                 </tr>
                             ))}
-                            {clients.length === 0 && (
-                                <tr>
-                                    <td colSpan={4} className="px-8 py-20 text-center text-slate-400 font-medium italic">No hay empresas registradas. Comience creando una nueva conexión.</td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
                 </div>
