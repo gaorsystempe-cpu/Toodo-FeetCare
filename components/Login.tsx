@@ -11,7 +11,8 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin }) => {
-  const [accessCode, setAccessCode] = useState('FEETCARE');
+  // Cambiado de 'FEETCARE' a '' para que el campo inicie vacío
+  const [accessCode, setAccessCode] = useState('');
   const [password, setPassword] = useState(''); 
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +22,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    const code = accessCode.trim().toUpperCase();
+    
+    if (!isAdminMode && !code) {
+      setError("Por favor, ingrese el código de acceso.");
+      return;
+    }
+
     setIsLoading(true);
 
     if (isAdminMode) {
@@ -34,11 +43,10 @@ const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin }) => {
         return;
     }
 
-    const code = accessCode.trim().toUpperCase();
     try {
         const clientConfig = await getClientByCode(code);
         if (!clientConfig) {
-            setError("Código de empresa no válido.");
+            setError("Código de empresa no válido o inexistente.");
             setIsLoading(false);
             return;
         }
@@ -66,7 +74,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin }) => {
             }, clientConfig);
         }, 500);
     } catch (err: any) {
-        setError(err.message || "Error al conectar.");
+        setError(err.message || "Error al conectar con la instancia de Odoo.");
         setIsLoading(false);
     }
   };
@@ -87,7 +95,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin }) => {
                 <span className="text-brand-500">Odoo SaaS</span>
             </h2>
             <p className="text-slate-500 text-lg font-medium max-w-sm leading-relaxed">
-                Visualización de rentabilidad en tiempo real para empresas de alto rendimiento.
+                Plataforma privada de rentabilidad para empresas integradas con Odoo.
             </p>
         </div>
         
@@ -101,7 +109,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin }) => {
 
       <div className={`w-full md:w-7/12 flex items-center justify-center p-12 transition-colors duration-500 ${isAdminMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <div className={`max-w-md w-full p-10 rounded-[3rem] shadow-2xl border transition-all duration-500 ${isAdminMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
-            <h3 className={`text-3xl font-black mb-8 tracking-tighter uppercase ${isAdminMode ? 'text-white' : 'text-slate-900'}`}>{isAdminMode ? 'Admin Access' : 'Iniciar Sesión'}</h3>
+            <h3 className={`text-3xl font-black mb-8 tracking-tighter uppercase ${isAdminMode ? 'text-white' : 'text-slate-900'}`}>{isAdminMode ? 'Admin Access' : 'Acceso Privado'}</h3>
             
             <form onSubmit={handleLogin} className="space-y-6">
                 {!isAdminMode ? (
@@ -109,8 +117,17 @@ const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin }) => {
                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Código de Empresa</label>
                         <div className="relative">
                             <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
-                            <input type="text" className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-black text-slate-800 uppercase tracking-widest focus:border-brand-500 transition-all" placeholder="EJ: FEETCARE" value={accessCode} onChange={(e) => setAccessCode(e.target.value)} disabled={isLoading} />
+                            <input 
+                                type="text" 
+                                className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-black text-slate-800 uppercase tracking-widest focus:border-brand-500 transition-all" 
+                                placeholder="INGRESE SU CÓDIGO" 
+                                value={accessCode} 
+                                onChange={(e) => setAccessCode(e.target.value)} 
+                                disabled={isLoading} 
+                                autoFocus
+                            />
                         </div>
+                        <p className="text-[9px] text-slate-400 mt-3 ml-1 font-medium italic">* Solicite su código al administrador del sistema.</p>
                     </div>
                 ) : (
                     <div>
@@ -121,12 +138,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin }) => {
                         </div>
                     </div>
                 )}
-                {error && <div className="text-red-500 text-[10px] font-black uppercase flex items-center gap-2 px-1"><AlertTriangle size={12}/> {error}</div>}
+                {error && <div className="text-red-500 text-[10px] font-black uppercase flex items-center gap-2 px-1 animate-pulse"><AlertTriangle size={12}/> {error}</div>}
                 <button type="submit" disabled={isLoading} className={`w-full py-5 rounded-2xl font-black text-xs shadow-2xl flex items-center justify-center gap-3 transition-all active:scale-95 ${isLoading ? 'bg-slate-100 text-slate-300' : isAdminMode ? 'bg-white text-slate-900' : 'bg-brand-500 text-white shadow-brand-500/30'}`}>
                     {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /> {statusMessage.toUpperCase()}</> : <>CONTINUAR <ArrowRight size={18} /></>}
                 </button>
                 <div className="text-center pt-6">
-                     <button type="button" onClick={() => setIsAdminMode(!isAdminMode)} className="text-[10px] font-black text-slate-400 uppercase hover:text-brand-500 transition-colors">Cambiar modo de acceso</button>
+                     <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setError(null); }} className="text-[10px] font-black text-slate-400 uppercase hover:text-brand-500 transition-colors">Cambiar modo de acceso</button>
                 </div>
             </form>
         </div>
