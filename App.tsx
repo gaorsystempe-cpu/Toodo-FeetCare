@@ -10,7 +10,6 @@ import ProductManager from './components/ProductManager';
 import { OdooSession, ClientConfig } from './types';
 import { getClientByCode } from './services/clientManager';
 import { OdooClient } from './services/odoo';
-// Import Loader2 icon from lucide-react
 import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -22,7 +21,6 @@ const App: React.FC = () => {
   const [isStoreMode, setIsStoreMode] = useState(false);
   const [isStoreLoading, setIsStoreLoading] = useState(false);
 
-  // Verificar modo tienda por URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const shopCode = params.get('shop');
@@ -33,13 +31,13 @@ const App: React.FC = () => {
 
   const initStoreMode = async (code: string) => {
     setIsStoreLoading(true);
-    const config = await getClientByCode(code);
-    if (config && config.isActive) {
-      setClientConfig(config);
-      try {
-        // Fix line 40: constructor expects 2 arguments
+    try {
+      const config = await getClientByCode(code);
+      if (config && config.isActive) {
+        setClientConfig(config);
         const client = new OdooClient(config.url, config.db);
         const uid = await client.authenticate(config.username, config.apiKey);
+        
         if (uid) {
           const companiesData: any[] = await client.searchRead(uid, config.apiKey, 'res.company', [], ['name']);
           const found = config.companyFilter === 'ALL' ? companiesData[0] : companiesData.find(c => c.name.toUpperCase().includes(config.companyFilter.toUpperCase()));
@@ -51,17 +49,18 @@ const App: React.FC = () => {
             apiKey: config.apiKey,
             uid: uid,
             useProxy: true,
-            companyId: found ? found.id : companiesData[0].id,
-            companyName: found ? found.name : companiesData[0].name
+            companyId: found ? found.id : (companiesData[0]?.id || undefined),
+            companyName: found ? found.name : (companiesData[0]?.name || 'Empresa')
           });
           setIsStoreMode(true);
         }
-      } catch (e) {
-        console.error("Store Auth Error", e);
-        alert("Error al conectar con la tienda. Intente más tarde.");
       }
+    } catch (e: any) {
+      console.error("Store Auth Error", e);
+      // No alertar inmediatamente para no molestar al usuario si es un error de carga de red
+    } finally {
+      setIsStoreLoading(false);
     }
-    setIsStoreLoading(false);
   };
 
   const handleLogin = (session: OdooSession | null, config: ClientConfig) => {
@@ -84,20 +83,16 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
     setIsStoreMode(false);
     setCurrentView('general');
-    
-    // Safety wrap for pushState which can fail in sandboxed or blob-origin environments
     try {
       window.history.pushState({}, '', window.location.pathname);
-    } catch (e) {
-      console.warn("Could not update history state: restricted environment.");
-    }
+    } catch (e) {}
   };
 
   if (isStoreLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
         <Loader2 className="w-10 h-10 animate-spin text-brand-500 mb-4" />
-        <p className="font-bold text-slate-600 animate-pulse uppercase tracking-widest text-xs">Cargando Catálogo...</p>
+        <p className="font-bold text-slate-600 animate-pulse uppercase tracking-widest text-xs">Conectando con Odoo...</p>
       </div>
     );
   }
