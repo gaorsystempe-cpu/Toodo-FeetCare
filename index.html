@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LEMON BI - Integrado con Odoo</title>
+  
+  <!-- Google Fonts: Ubuntu Sans, Ubuntu Condensed, Ubuntu Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Condensed&family=Ubuntu+Mono&family=Ubuntu+Sans:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f7fee7',
+              100: '#ecfccb',
+              200: '#d9f99d',
+              300: '#bef264',
+              400: '#a3e635',
+              500: '#84cc16', 
+              600: '#65a30d',
+              700: '#4d7c0f',
+              800: '#3f6212',
+              900: '#365314',
+              950: '#1a2e05',
+            }
+          },
+          fontFamily: {
+            sans: ['"Ubuntu Sans"', 'sans-serif'],
+            condensed: ['"Ubuntu Condensed"', 'sans-serif'],
+            mono: ['"Ubuntu Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #f8fafc;
+      color: #334155;
+      background-image: 
+        radial-gradient(circle at 0% 0%, #f7fee7 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, #eff6ff 0%, transparent 40%);
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+  </style>
+
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "recharts": "https://esm.sh/recharts@2.12.2?deps=react@18.3.1,react-dom@18.3.1",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.3.1",
+    "xlsx": "https://esm.sh/xlsx@0.18.5",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7",
+    "@google/genai": "https://esm.sh/@google/genai",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
