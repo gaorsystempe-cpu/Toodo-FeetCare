@@ -49,16 +49,14 @@ export class OdooClient {
   private url: string;
   private db: string;
   
-  // Lista de proxies actualizada y optimizada para Vercel/Producción
+  // Proxies mejorados para Vercel
   private proxies = [
-    (url: string) => url, // Intento directo (por si el servidor soporta CORS)
     (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     (url: string) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-    (url: string) => `https://thingproxy.freeboard.io/fetch/${url}`
+    (url: string) => url, // Directo como último recurso
   ];
 
   constructor(url: string, db: string) {
-    // Asegurar que la URL sea válida y no tenga slashes al final
     this.url = url.trim().replace(/\/+$/, ''); 
     if (!this.url.startsWith('http')) {
         this.url = 'https://' + this.url;
@@ -76,61 +74,42 @@ export class OdooClient {
     const targetUrl = `${this.url}/xmlrpc/2/${endpoint}`;
     let lastError: any = null;
 
-    // Intentar con cada proxy disponible de forma secuencial
     for (const proxyFn of this.proxies) {
       try {
         const fetchUrl = proxyFn(targetUrl);
         return await this.executeFetch(fetchUrl, xml);
       } catch (error: any) {
         lastError = error;
-        // Si es un error de Odoo (XML válido pero con fault), no seguir con otros proxies
-        if (error.message.includes('Error de Odoo:')) {
-            throw error;
-        }
-        console.warn(`Intento fallido con proxy ${proxyFn.name || 'actual'}, intentando el siguiente...`, error.message);
+        if (error.message.includes('Error de Odoo:')) throw error;
+        console.warn(`Proxy fallido, intentando siguiente...`, error.message);
         continue; 
       }
     }
 
-    // Si llegamos aquí, todos fallaron
-    const errorMessage = lastError?.message || "Error de red";
-    if (errorMessage.includes("Failed to fetch")) {
-        throw new Error("No se pudo conectar con Odoo (Error de CORS/Red). Verifique que la URL de Odoo sea accesible y use HTTPS.");
-    }
-    throw lastError;
+    throw new Error(`Error de conexión con Odoo: ${lastError?.message || 'CORS o Red bloqueada'}. Verifique que el servidor Odoo acepte conexiones XML-RPC.`);
   }
 
   private async executeFetch(url: string, xml: string) {
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'text/xml'
-      },
+      headers: { 'Content-Type': 'text/xml' },
       body: xml
     });
 
-    if (!response.ok) {
-      throw new Error(`Error en el servidor de Odoo o Proxy (HTTP ${response.status})`);
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const text = await response.text();
-    if (!text || text.trim().length === 0) {
-        throw new Error("El servidor de Odoo devolvió una respuesta vacía.");
-    }
+    if (!text) throw new Error("Respuesta vacía");
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(text, 'text/xml');
     
-    // Validar si hay error de parseo XML
-    const parseError = doc.querySelector('parsererror');
-    if (parseError) {
-        throw new Error("Error en el formato de respuesta del servidor (XML inválido).");
-    }
+    if (doc.querySelector('parsererror')) throw new Error("XML inválido");
 
     const fault = doc.querySelector('fault');
     if (fault) {
       const faultValue = fault.querySelector('value');
-      const faultStruct = faultValue ? parseValue(faultValue) : { faultString: 'Error desconocido de Odoo' };
+      const faultStruct = faultValue ? parseValue(faultValue) : { faultString: 'Error desconocido' };
       throw new Error(`Error de Odoo: ${faultStruct.faultString}`);
     }
 
@@ -141,7 +120,7 @@ export class OdooClient {
   async authenticate(username: string, apiKey: string): Promise<number> {
     const uid = await this.rpcCall('common', 'authenticate', [this.db, username, apiKey, {}]);
     if (uid === false || typeof uid !== 'number') {
-        throw new Error("Credenciales de Odoo inválidas para la base de datos " + this.db);
+        throw new Error("Credenciales inválidas para la DB " + this.db);
     }
     return uid;
   }
